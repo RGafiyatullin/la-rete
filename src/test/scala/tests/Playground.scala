@@ -221,7 +221,7 @@ final class Playground extends TestBase {
 
 
 
-  "matches" should "instantiate" in { new Matches }
+  "matches" should "instantiate" in { new Matches; () }
 
   it should "work with NaiveProcessor" in runTest(NaiveProcessor)
 
