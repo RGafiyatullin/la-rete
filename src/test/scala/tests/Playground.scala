@@ -12,6 +12,8 @@ import com.github.rgafiyatullin.xmpp_protocol.stanzas.message.{Message, MessageT
 import com.github.rgafiyatullin.xmpp_protocol.stanzas.presence.{Presence, PresenceType}
 
 final class Playground extends TestBase {
+  val testSize = 100
+
   final class Matches {
     object properties {
       sealed trait S
@@ -137,11 +139,8 @@ final class Playground extends TestBase {
     }
   }
 
-  "matches" should "instantiate" in { new Matches }
-
-  it should "combine #1" in {
-    val m = new Matches
-    import m.filters
+  def createRules(matches: Matches): Seq[Processor.Rule[Stanza, (Int, Int)]] = {
+    import matches.filters
 
     val stanzaIsRequestIQ = filters.stanza.isIQ and filters.iq.isRequest
     val stanzaIsResponseIQ = filters.stanza.isIQ and filters.iq.isResponse
@@ -151,31 +150,62 @@ final class Playground extends TestBase {
     val stanzaIsSubscriptionPresence = filters.stanza.isPresence and filters.presence.isSubscription
     val stanzaIsErrorPresence = filters.stanza.isPresence and filters.presence.isError
 
-    val max = 5
-    def stanzasWithIDandQN(qn: QName): Seq[Processor.Rule[Stanza, Any]] =
-      for (i <- 0 to max) yield
-        if (i == max)
-          (stanzaIsRequestIQ and filters.payload[IQ.Request](qn)) -> (qn.hashCode(), 0)
+    def stanzasWithIDandQN(qn: QName, n: Int): Seq[Processor.Rule[Stanza, (Int, Int)]] =
+      for (i <- 0 to testSize) yield
+        if (i == testSize)
+          (stanzaIsRequestIQ and filters.payload[IQ.Request](qn)) -> (n, 0)
         else if (i % 2 == 0)
-          (stanzaIsRequestIQ and filters.payload[IQ.Request](qn) and filters.idLength[IQ.Request](i)) -> (qn.hashCode(), i)
+          (stanzaIsRequestIQ and filters.payload[IQ.Request](qn) and filters.idLength[IQ.Request](i)) -> (n, i)
         else
-          (stanzaIsRequestIQ and filters.idLength[IQ.Request](i) and filters.payload[IQ.Request](qn)) -> (qn.hashCode(), i)
+          (stanzaIsRequestIQ and filters.idLength[IQ.Request](i) and filters.payload[IQ.Request](qn)) -> (n, i)
 
-    val stanzaIsRequestIQRosterQuery = stanzasWithIDandQN(XmppConstants.names.jabber.iq.roster.query)
-    val stanzaIsRequestIQXmppBind = stanzasWithIDandQN(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind)
+    val stanzaIsRequestIQRosterQuery = stanzasWithIDandQN(XmppConstants.names.jabber.iq.roster.query, 8)
+    val stanzaIsRequestIQXmppBind = stanzasWithIDandQN(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind, 9)
 
-    val rules = Seq[Processor.Rule[Stanza, Any]](
-      stanzaIsRequestIQ -> 1,
-      stanzaIsResponseIQ -> 2,
-      stanzaIsRequestMessage -> 3,
-      stanzaIsErrorMessage -> 4,
-      stanzaIsAvailabilityPresence -> 5,
-      stanzaIsSubscriptionPresence -> 6,
-      stanzaIsErrorPresence -> 7)
+    stanzaIsRequestIQRosterQuery ++
+      stanzaIsRequestIQXmppBind ++
+      Seq[Processor.Rule[Stanza, (Int, Int)]](
+        stanzaIsRequestIQ -> (1, 0),
+        stanzaIsResponseIQ -> (2, 0),
+        stanzaIsRequestMessage -> (3, 0),
+        stanzaIsErrorMessage -> (4, 0),
+        stanzaIsAvailabilityPresence -> (5, 0),
+        stanzaIsSubscriptionPresence -> (6, 0),
+        stanzaIsErrorPresence -> (7, 0) )
+  }
 
-    val allRules = stanzaIsRequestIQRosterQuery ++ stanzaIsRequestIQXmppBind ++ rules
+  def testData: Seq[(Stanza, (Int, Int))] = {
+    type Item = (Stanza, (Int, Int))
+    val rosterIQs: Seq[Item] =
+      for (i <- 0 until testSize)
+        yield IQ.request(Node(XmppConstants.names.jabber.iq.roster.query)).withId("".padTo(i, '_')) -> (8, if (i < testSize) i else 0)
+    val bindIQs: Seq[Item] =
+      for (i <- 0 until testSize)
+        yield IQ.request(Node(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind)).withId("".padTo(i, '_')) -> (9, if (i < testSize) i else 0)
 
-    val matrix = allRules.map(_._1).reduce(_ or _).nodes
+    rosterIQs ++
+      bindIQs ++
+      Seq[Item](
+        IQ.result("1") -> (2, 0),
+        IQ.error("2", XmppStanzaError.ServiceUnavailable()) -> (2, 0),
+
+        Message.chat -> (3, 0),
+        Message.groupchat -> (3, 0),
+        Message.error(XmppStanzaError.FeatureNotImplemented()) -> (4, 0),
+        Presence.availability(PresenceType.Available) -> (5, 0),
+        Presence.subscription(PresenceType.Subscribe) -> (6, 0),
+        Presence.error(XmppStanzaError.ResourceConstraint()) -> (7, 0)
+      )
+  }
+
+  def runTest(processorFactory: Processor.Factory): Unit = {
+    val m = new Matches
+    val rules = createRules(m)
+
+    val matrix = rules
+      .map(_._1)
+      .reduce(_ or _)
+      .nodes
 
     for {
       row <- matrix
@@ -184,38 +214,18 @@ final class Playground extends TestBase {
       println("")
     }
 
-    val processor = NaiveProcessor.createProcessor(allRules)
+    val processor = processorFactory.createProcessor(rules)
 
-    val inputs = Seq[(Stanza, Any)](
-      IQ.request(Node(XmppConstants.names.jabber.iq.roster.query)).withId("1") -> (XmppConstants.names.jabber.iq.roster.query.hashCode(), 1),
-      IQ.request(Node(XmppConstants.names.jabber.iq.roster.query)).withId("12") -> (XmppConstants.names.jabber.iq.roster.query.hashCode(), 2),
-      IQ.request(Node(XmppConstants.names.jabber.iq.roster.query)).withId("123") -> (XmppConstants.names.jabber.iq.roster.query.hashCode(), 3),
-      IQ.request(Node(XmppConstants.names.jabber.iq.roster.query)).withId("1234") -> (XmppConstants.names.jabber.iq.roster.query.hashCode(), 4),
-      IQ.request(Node(XmppConstants.names.jabber.iq.roster.query)).withId("12345") -> (XmppConstants.names.jabber.iq.roster.query.hashCode(), 0),
-      IQ.request(Node(XmppConstants.names.jabber.iq.roster.query)).withId("123456") -> (XmppConstants.names.jabber.iq.roster.query.hashCode(), 0),
-
-      IQ.request(Node(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind)).withId("1") -> (XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind.hashCode(), 1),
-      IQ.request(Node(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind)).withId("12") -> (XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind.hashCode(), 2),
-      IQ.request(Node(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind)).withId("123") -> (XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind.hashCode(), 3),
-      IQ.request(Node(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind)).withId("1234") -> (XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind.hashCode(), 4),
-      IQ.request(Node(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind)).withId("12345") -> (XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind.hashCode(), 0),
-      IQ.request(Node(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind)).withId("123456") -> (XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind.hashCode(), 0),
-
-      IQ.result("1") -> 2,
-      IQ.error("2", XmppStanzaError.ServiceUnavailable()) -> 2,
-
-      Message.chat -> 3,
-      Message.groupchat -> 3,
-      Message.error(XmppStanzaError.FeatureNotImplemented()) -> 4,
-      Presence.availability(PresenceType.Available) -> 5,
-      Presence.subscription(PresenceType.Subscribe) -> 6,
-      Presence.error(XmppStanzaError.ResourceConstraint()) -> 7 )
-
-    inputs.foreach {
+    testData.foreach {
       case (stanza, result) =>
         processor.process(stanza) should contain (result)
     }
-
-
   }
+
+
+
+
+  "matches" should "instantiate" in { new Matches }
+
+  it should "combine #1" in runTest(NaiveProcessor)
 }
