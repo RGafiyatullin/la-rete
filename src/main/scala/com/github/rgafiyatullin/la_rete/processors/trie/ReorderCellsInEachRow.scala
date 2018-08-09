@@ -1,12 +1,12 @@
-package com.github.rgafiyatullin.la_rete.processors.cheeky
+package com.github.rgafiyatullin.la_rete.processors.trie
 
 import com.github.rgafiyatullin.la_rete.Node
 
 import scala.annotation.tailrec
 
-final class ReorderCellsInEachRow[V] extends CheekyTransformation[V] {
-  type M = CheekyTypes[V]#Matrix
-  type R = CheekyTypes[V]#Row
+final class ReorderCellsInEachRow[V] extends MatrixTransformation[V] {
+  type M = MatrixTypes[V]#Matrix
+  type R = MatrixTypes[V]#Row
 
   def reorder(nodes: Seq[Node]): Seq[Node] =
     nodes.sortBy(_.property.toString)

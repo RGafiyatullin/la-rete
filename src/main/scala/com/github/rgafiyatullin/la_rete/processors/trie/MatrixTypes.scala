@@ -1,8 +1,8 @@
-package com.github.rgafiyatullin.la_rete.processors.cheeky
+package com.github.rgafiyatullin.la_rete.processors.trie
 
 import com.github.rgafiyatullin.la_rete.Node
 
-class CheekyTypes[V] {
+class MatrixTypes[V] {
   type Row = (Seq[Node], V)
   type Matrix = Seq[Row]
 }

@@ -56,7 +56,6 @@ object Filter {
     }
 
     override def nodes: Seq[Seq[Node]] = Seq(Seq(node))
-
   }
 }
 

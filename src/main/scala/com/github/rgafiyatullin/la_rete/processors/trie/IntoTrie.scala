@@ -1,4 +1,4 @@
-package com.github.rgafiyatullin.la_rete.processors.cheeky
+package com.github.rgafiyatullin.la_rete.processors.trie
 
 import com.github.rgafiyatullin.la_rete.Property
 
@@ -45,9 +45,9 @@ object IntoTrie {
   }
 }
 
-final class IntoTrie[V] extends Function[CheekyTypes[V]#Matrix, IntoTrie.Trie[V]] {
-  type M = CheekyTypes[V]#Matrix
-  type R = CheekyTypes[V]#Row
+final class IntoTrie[V] extends Function[MatrixTypes[V]#Matrix, IntoTrie.Trie[V]] {
+  type M = MatrixTypes[V]#Matrix
+  type R = MatrixTypes[V]#Row
 
   import IntoTrie.Trie
 

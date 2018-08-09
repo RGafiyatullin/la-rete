@@ -1,17 +1,17 @@
-package com.github.rgafiyatullin.la_rete.processors.cheeky
+package com.github.rgafiyatullin.la_rete.processors.trie
 
 import com.github.rgafiyatullin.la_rete.{Filter, Processor}
 
-case object CheekyProcessor extends Processor.Factory {
+case object TrieProcessor extends Processor.Factory {
   override def createProcessor[In, V]
     (rules: Seq[(Filter[In, _], V)])
   : Processor[In, V] =
-    CheekyProcessor(rules)
+    TrieProcessor(rules)
 }
 
-final case class CheekyProcessor[In, V](rules: Seq[Processor.Rule[In, V]]) extends Processor[In, V] {
-  private type Row = CheekyTypes[V]#Row
-  private type Matrix = CheekyTypes[V]#Matrix
+final case class TrieProcessor[In, V](rules: Seq[Processor.Rule[In, V]]) extends Processor[In, V] {
+  private type Row = MatrixTypes[V]#Row
+  private type Matrix = MatrixTypes[V]#Matrix
 
   private def initialMatrix: Seq[Row] =
     rules

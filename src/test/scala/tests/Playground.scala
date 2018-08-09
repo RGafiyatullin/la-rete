@@ -1,6 +1,6 @@
 package tests
 
-import com.github.rgafiyatullin.la_rete.processors.cheeky.CheekyProcessor
+import com.github.rgafiyatullin.la_rete.processors.trie.TrieProcessor
 import com.github.rgafiyatullin.la_rete.processors.naive.NaiveProcessor
 import com.github.rgafiyatullin.la_rete.{Filter, Processor, Property}
 import com.github.rgafiyatullin.xml.common.QName
@@ -13,7 +13,7 @@ import com.github.rgafiyatullin.xmpp_protocol.stanzas.message.{Message, MessageT
 import com.github.rgafiyatullin.xmpp_protocol.stanzas.presence.{Presence, PresenceType}
 
 final class Playground extends TestBase {
-  val testSize = 10
+  val testSize = 20
 
   final class Matches {
     object properties {
@@ -225,5 +225,5 @@ final class Playground extends TestBase {
 
   it should "work with NaiveProcessor" in runTest(NaiveProcessor)
 
-  it should "work with CheekyProcessor" in runTest(CheekyProcessor)
+  it should "work with CheekyProcessor" in runTest(TrieProcessor)
 }
