@@ -52,6 +52,7 @@ object Filter {
 
       override def property: Property.Untyped = self.property
       override def value: Any = self.value
+      override def changeOfType: Boolean = self.changeOfType
     }
 
     override def nodes: Seq[Seq[Node]] = Seq(Seq(node))

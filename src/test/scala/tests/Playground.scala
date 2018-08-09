@@ -1,5 +1,6 @@
 package tests
 
+import com.github.rgafiyatullin.la_rete.processors.cheeky.CheekyProcessor
 import com.github.rgafiyatullin.la_rete.processors.naive.NaiveProcessor
 import com.github.rgafiyatullin.la_rete.{Filter, Processor, Property}
 import com.github.rgafiyatullin.xml.common.QName
@@ -12,7 +13,7 @@ import com.github.rgafiyatullin.xmpp_protocol.stanzas.message.{Message, MessageT
 import com.github.rgafiyatullin.xmpp_protocol.stanzas.presence.{Presence, PresenceType}
 
 final class Playground extends TestBase {
-  val testSize = 100
+  val testSize = 10
 
   final class Matches {
     object properties {
@@ -53,18 +54,16 @@ final class Playground extends TestBase {
         override def isDefinedAt(obj: Any): Boolean = obj.isInstanceOf[Presence]
       }
 
-      def paylaod[S <: Stanza.HasBody.Untyped]: Property[S, QName] =
-        new Property[S, QName] {
-          override def toString: String = "q"
-          override def apply(obj: S): QName = obj.body.qName
-          override def isDefinedAt(obj: Any): Boolean = obj.isInstanceOf[Stanza.HasBody.Untyped]
-        }
-      def idLength[S <: Stanza.HasID.Untyped]: Property[S, Int] =
-        new Property[S, Int] {
-          override def toString: String = "idl"
-          override def apply(obj: S): Int = obj.id.length
-          override def isDefinedAt(obj: Any): Boolean = obj.isInstanceOf[Stanza.HasID.Untyped]
-        }
+      object paylaod extends Property[IQ.Request, QName] {
+        override def toString: String = "q"
+        override def apply(obj: IQ.Request): QName = obj.body.qName
+        override def isDefinedAt(obj: Any): Boolean = obj.isInstanceOf[Stanza.HasBody.Untyped]
+      }
+      object idLength extends Property[IQ.Request, Int] {
+        override def toString: String = "idl"
+        override def apply(obj: IQ.Request): Int = obj.id.length
+        override def isDefinedAt(obj: Any): Boolean = obj.isInstanceOf[Stanza.HasID.Untyped]
+      }
     }
 
     object filters {
@@ -132,10 +131,10 @@ final class Playground extends TestBase {
         val isError: Filter[Presence, Presence.Error] =
           Filter.property(properties.presence, PresenceType.Error).as[Presence.Error]
       }
-      def payload[S <: Stanza.HasBody.Untyped](qn: QName): Filter[S, S] =
-        Filter.property(properties.paylaod[S], qn)
-      def idLength[S <: Stanza.HasID.Untyped](length: Int): Filter[S, S] =
-        Filter.property(properties.idLength[S], length)
+      def payload(qn: QName): Filter[IQ.Request, IQ.Request] =
+        Filter.property(properties.paylaod, qn)
+      def idLength(length: Int): Filter[IQ.Request, IQ.Request] =
+        Filter.property(properties.idLength, length)
     }
   }
 
@@ -153,11 +152,11 @@ final class Playground extends TestBase {
     def stanzasWithIDandQN(qn: QName, n: Int): Seq[Processor.Rule[Stanza, (Int, Int)]] =
       for (i <- 0 to testSize) yield
         if (i == testSize)
-          (stanzaIsRequestIQ and filters.payload[IQ.Request](qn)) -> (n, 0)
+          (stanzaIsRequestIQ and filters.payload(qn)) -> (n, 0)
         else if (i % 2 == 0)
-          (stanzaIsRequestIQ and filters.payload[IQ.Request](qn) and filters.idLength[IQ.Request](i)) -> (n, i)
+          (stanzaIsRequestIQ and filters.payload(qn) and filters.idLength(i)) -> (n, i)
         else
-          (stanzaIsRequestIQ and filters.idLength[IQ.Request](i) and filters.payload[IQ.Request](qn)) -> (n, i)
+          (stanzaIsRequestIQ and filters.idLength(i) and filters.payload(qn)) -> (n, i)
 
     val stanzaIsRequestIQRosterQuery = stanzasWithIDandQN(XmppConstants.names.jabber.iq.roster.query, 8)
     val stanzaIsRequestIQXmppBind = stanzasWithIDandQN(XmppConstants.names.urn.ietf.params.xmlNs.xmppBind.bind, 9)
@@ -172,6 +171,8 @@ final class Playground extends TestBase {
         stanzaIsAvailabilityPresence -> (5, 0),
         stanzaIsSubscriptionPresence -> (6, 0),
         stanzaIsErrorPresence -> (7, 0) )
+
+//    stanzaIsRequestIQRosterQuery
   }
 
   def testData: Seq[(Stanza, (Int, Int))] = {
@@ -196,30 +197,25 @@ final class Playground extends TestBase {
         Presence.subscription(PresenceType.Subscribe) -> (6, 0),
         Presence.error(XmppStanzaError.ResourceConstraint()) -> (7, 0)
       )
+//    rosterIQs
   }
 
   def runTest(processorFactory: Processor.Factory): Unit = {
     val m = new Matches
     val rules = createRules(m)
 
-    val matrix = rules
-      .map(_._1)
-      .reduce(_ or _)
-      .nodes
-
-    for {
-      row <- matrix
-    } {
-      for { cell <- row } print("%s ".format(cell).padTo(30, ' '))
-      println("")
-    }
-
+    val t0c = System.nanoTime()
     val processor = processorFactory.createProcessor(rules)
+    val t1c = System.nanoTime()
+    println(s"$processorFactory -> dt[compile]=${(t1c - t0c) / 1000000}ms")
 
+    val t0e = System.nanoTime()
     testData.foreach {
       case (stanza, result) =>
         processor.process(stanza) should contain (result)
     }
+    val t1e = System.nanoTime()
+    println(s"$processorFactory -> dt[exec]=${(t1e - t0e) / 1000000}ms")
   }
 
 
@@ -227,5 +223,7 @@ final class Playground extends TestBase {
 
   "matches" should "instantiate" in { new Matches }
 
-  it should "combine #1" in runTest(NaiveProcessor)
+  it should "work with NaiveProcessor" in runTest(NaiveProcessor)
+
+  it should "work with CheekyProcessor" in runTest(CheekyProcessor)
 }
