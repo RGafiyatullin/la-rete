@@ -6,7 +6,10 @@ case object TrieProcessor extends Processor.Factory {
   override def createProcessor[In, V]
     (rules: Seq[(Filter[In, _], V)])
   : Processor[In, V] =
-    TrieProcessor(rules)
+    if (rules.isEmpty)
+      new Processor[In, V] { override def process(item: In): Option[V] = None }
+    else
+      TrieProcessor(rules)
 }
 
 final case class TrieProcessor[In, V](rules: Seq[Processor.Rule[In, V]]) extends Processor[In, V] {

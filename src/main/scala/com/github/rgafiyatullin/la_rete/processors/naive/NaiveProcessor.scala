@@ -6,7 +6,10 @@ case object NaiveProcessor extends Processor.Factory {
   override def createProcessor[In, V]
     (rules: Seq[Processor.Rule[In, V]])
   : Processor[In, V] =
-    NaiveProcessor(rules)
+    if (rules.isEmpty)
+      new Processor[In, V] { override def process(item: In): Option[V] = None }
+    else
+      NaiveProcessor(rules)
 }
 
 final case class NaiveProcessor[In, V] private (
