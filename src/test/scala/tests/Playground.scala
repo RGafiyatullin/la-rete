@@ -226,4 +226,20 @@ final class Playground extends TestBase {
   it should "work with NaiveProcessor" in runTest(NaiveProcessor)
 
   it should "work with CheekyProcessor" in runTest(TrieProcessor)
+
+  "constTrue" should "always pass" in {
+    val rules = Seq(Filter.constTrue[Any] -> Unit)
+    val processor = TrieProcessor.createProcessor(rules)
+    (1 to 100) foreach { item =>
+      processor.process(item).isDefined should be (true)
+    }
+  }
+
+  "constFalse" should "always reject" in {
+    val rules = Seq(Filter.constFalse[Any] -> Unit)
+    val processor = TrieProcessor.createProcessor(rules)
+    (1 to 100) foreach { item =>
+      processor.process(item).isEmpty should be (true)
+    }
+  }
 }

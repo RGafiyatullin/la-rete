@@ -12,6 +12,23 @@ object Filter {
     PropertyIs(p, v, changeOfType = false)
 
 
+  def const[T](b: Boolean): Filter[T, T] =
+    if (b) constTrue
+    else constFalse
+
+  def constTrue[T]: Filter[T, T] = ConstTrue()
+
+  def constFalse[T]: Filter[T, T] = ConstFalse()
+
+
+  private final case class ConstTrue[T]() extends Filter[T, T] {
+    override def nodes: Seq[Seq[Node]] = Seq(Seq.empty)
+  }
+  private final case class ConstFalse[T]() extends Filter[T, T] {
+    override def nodes: Seq[Seq[Node]] = Seq.empty
+  }
+
+
   private final case class Or[-In, +Out]
     (left: Filter[In, Out],
      right: Filter[In, Out])
