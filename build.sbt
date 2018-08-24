@@ -18,7 +18,7 @@ lazy val root = (project in file("."))
           case v2_11 if v2_11.startsWith("2.11.") => "2.2.6"
         }
       } % Test,
-      "com.github.rgafiyatullin" %% "xmpp-protocol" % "0.5.7.0" % Test
+      "com.github.rgafiyatullin" %% "xmpp-protocol" % "0.6.0.0" % Test
     ),
 
     publishTo := BuildEnv.publishTo,
