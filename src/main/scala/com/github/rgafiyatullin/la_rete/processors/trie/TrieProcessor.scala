@@ -21,6 +21,8 @@ final case class TrieProcessor[In, V](rules: Seq[Processor.Rule[In, V]]) extends
       .map { case (filter, value) => filter.nodes.map(_ -> value) }
       .reduce(_ ++ _)
 
+
+  private val calculatePropertiesCardinalities = new CalculatePropertiesCardinalities
   private val reorderCellsInEachRow = new ReorderCellsInEachRow[V]
   private val intoTrie = new IntoTrie[V]
 
@@ -40,7 +42,9 @@ final case class TrieProcessor[In, V](rules: Seq[Processor.Rule[In, V]]) extends
   private val trie = {
     val m0 = initialMatrix
 //    util.dumpMatrix("M0", m0)
-    val m1 = reorderCellsInEachRow(m0)
+    val cardinalities = calculatePropertiesCardinalities(m0)
+//    println(s"cardinalities: $cardinalities")
+    val m1 = reorderCellsInEachRow.withCardinalities(cardinalities)(m0)
 //    util.dumpMatrix("M1", m1)
     val trie = intoTrie(m1)
 //    println("==== BEGIN TRIE ====")
