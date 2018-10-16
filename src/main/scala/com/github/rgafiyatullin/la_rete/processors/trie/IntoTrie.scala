@@ -54,7 +54,8 @@ final class IntoTrie[V] extends Function[MatrixTypes[V]#Matrix, IntoTrie.Trie[V]
   def buildTrie(matrix: M): IntoTrie.Trie[V] =
     matrix match {
       case (Seq(), value) +: rows =>
-        assert(rows.isEmpty)
+        if (rows.nonEmpty)
+          println(s"Shaded predicates: $rows")
 //        println(s"case#1: value=$value")
         Trie.Constant(value)
 
