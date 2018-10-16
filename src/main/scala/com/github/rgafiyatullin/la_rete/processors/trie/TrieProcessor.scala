@@ -39,13 +39,13 @@ final case class TrieProcessor[In, V](rules: Seq[Processor.Rule[In, V]]) extends
 
   private val trie = {
     val m0 = initialMatrix
-    util.dumpMatrix("M0", m0)
+//    util.dumpMatrix("M0", m0)
     val m1 = reorderCellsInEachRow(m0)
-    util.dumpMatrix("M1", m1)
+//    util.dumpMatrix("M1", m1)
     val trie = intoTrie(m1)
-    println("==== BEGIN TRIE ====")
-    trie.dump.foreach(println)
-    println("====  END  TRIE ====")
+//    println("==== BEGIN TRIE ====")
+//    trie.dump.foreach(println)
+//    println("====  END  TRIE ====")
     trie
   }
 
