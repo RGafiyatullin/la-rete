@@ -12,6 +12,15 @@ case object TrieProcessor extends Processor.Factory {
       TrieProcessor(rules)
 }
 
+/**
+  * A trie-processor.
+  * Being provided the list of rules, builds a Trie of the checks that have to be done in order to find a value.
+  * @see IntoTrie.Trie[+V] for the algorithmic details.
+  *
+  * @param rules
+  * @tparam In
+  * @tparam V
+  */
 final case class TrieProcessor[In, V](rules: Seq[Processor.Rule[In, V]]) extends Processor[In, V] {
   private type Row = MatrixTypes[V]#Row
   private type Matrix = MatrixTypes[V]#Matrix

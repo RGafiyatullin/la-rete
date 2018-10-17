@@ -12,6 +12,16 @@ case object NaiveProcessor extends Processor.Factory {
       NaiveProcessor(rules)
 }
 
+/**
+  * An naïve implementation of Processor.
+  * Just checks the rules one by one until finds a match.
+  * Illustrates the definition of processing rules.
+  * Any alternative (presumably more efficient) implementation should behave exactly as this does.
+  *
+  * @param rules
+  * @tparam In
+  * @tparam V
+  */
 final case class NaiveProcessor[In, V] private (
   rules: Seq[Processor.Rule[In, V]])
     extends Processor[In, V]
